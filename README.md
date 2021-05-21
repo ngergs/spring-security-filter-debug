@@ -1,9 +1,33 @@
 ## Spring security filter debug project
 
-This is a simple project to reproduce a behaviour thas has been introduced with spring security 5.5.0 and has been included
-in spring boot 2.5.0. Adding a filter relative (before/after) to a custom, i.e. non-standard spring filter, results in an error.
+### Keycloak workaround
+Just to test how to fix keycloak regarding the spring security issue 9787.
+The KeycloakConfig holds the configuration from the original KeycloakWebSecurityConfigureAdapter adjusted for the aforementioned issue.
+The critical lines are:
 ```java
-        http.addFilterAfter(new SpringRelativeFilter(), SecurityContextHolderAwareRequestFilter.class)
-            .addFilterAfter(new CustomRelativeFilter(), SpringRelativeFilter.class);
+    @Override
+protected void configure(HttpSecurity http) throws Exception{
+        http.authorizeRequests();
+        // taken from KeycloakWebSecurityConfigurerAdapter and worker around to avoid spring security issue 9787
+        http
+        .csrf().requireCsrfProtectionMatcher(keycloakCsrfRequestMatcher())
+        .and()
+        .sessionManagement()
+        .sessionAuthenticationStrategy(sessionAuthenticationStrategy())
+        .and()
+        .addFilterBefore(keycloakPreAuthActionsFilter(),LogoutFilter.class)
+        .addFilterBefore(keycloakAuthenticationProcessingFilter(),LogoutFilter.class)
+        .addFilterAfter(keycloakSecurityContextRequestFilter(),SecurityContextHolderAwareRequestFilter.class)
+        .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(),SecurityContextHolderAwareRequestFilter.class)
+        .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint())
+        .and()
+        .logout()
+        .addLogoutHandler(keycloakLogoutHandler())
+        .logoutUrl("/sso/logout").permitAll()
+        .logoutSuccessUrl("/");
+}
 ```
-The above logic works with spring boot 2.4.5 but breaks with spring boot 2.5.0.
+Only the following line had to be adjusted:
+```java
+        .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(),SecurityContextHolderAwareRequestFilter.class)
+```
