@@ -1,7 +1,7 @@
 ## Spring security filter debug project
 
 ### Keycloak workaround
-Just to test how to fix keycloak regarding the spring security issue 9787.
+Just to test how to fix keycloak regarding the spring security issue 9787 using the [workaround from austinarbor](https://github.com/spring-projects/spring-security/issues/9787#issuecomment-846026138).
 The KeycloakConfig holds the configuration from the original KeycloakWebSecurityConfigureAdapter adjusted for the aforementioned issue.
 The critical lines are:
 ```java
