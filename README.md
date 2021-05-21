@@ -5,9 +5,12 @@ Just to test how to fix keycloak regarding the spring security issue 9787.
 The KeycloakConfig holds the configuration from the original KeycloakWebSecurityConfigureAdapter adjusted for the aforementioned issue.
 The critical lines are:
 ```java
-    @Override
-protected void configure(HttpSecurity http) throws Exception{
+@Override
+protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests();
+        // call to super would trigger spring security issue 9787
+        // super.configure(http);
+
         // taken from KeycloakWebSecurityConfigurerAdapter and worker around to avoid spring security issue 9787
         http
         .csrf().requireCsrfProtectionMatcher(keycloakCsrfRequestMatcher())
@@ -15,10 +18,10 @@ protected void configure(HttpSecurity http) throws Exception{
         .sessionManagement()
         .sessionAuthenticationStrategy(sessionAuthenticationStrategy())
         .and()
-        .addFilterBefore(keycloakPreAuthActionsFilter(),LogoutFilter.class)
-        .addFilterBefore(keycloakAuthenticationProcessingFilter(),LogoutFilter.class)
-        .addFilterAfter(keycloakSecurityContextRequestFilter(),SecurityContextHolderAwareRequestFilter.class)
-        .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(),SecurityContextHolderAwareRequestFilter.class)
+        .addFilterBefore(keycloakPreAuthActionsFilter(), LogoutFilter.class)
+        .addFilterBefore(keycloakAuthenticationProcessingFilter(), LogoutFilter.class)
+        .addFilterAfter(keycloakSecurityContextRequestFilter(), SecurityContextHolderAwareRequestFilter.class)
+        .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(), SecurityContextHolderAwareRequestFilter.class)
         .exceptionHandling().authenticationEntryPoint(authenticationEntryPoint())
         .and()
         .logout()
@@ -27,7 +30,7 @@ protected void configure(HttpSecurity http) throws Exception{
         .logoutSuccessUrl("/");
 }
 ```
-Only the following line had to be adjusted:
+Only the following line had to be adjusted compared to the original Keycloak configuration:
 ```java
         .addFilterAfter(keycloakAuthenticatedActionsRequestFilter(),SecurityContextHolderAwareRequestFilter.class)
 ```
